@@ -1,4 +1,5 @@
-from rest_framework import status
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from rest_framework import serializers, status
 
 
 class BaseService(object):
@@ -63,3 +64,77 @@ class BaseService(object):
         return cls._build_response(
             code=status.HTTP_500_INTERNAL_SERVER_ERROR, data=data, errors=errors, message=message
         )
+
+
+class PaginationService(BaseService):
+    def __init__(self, page_number=None, page_size=None, default_page_size=20):
+        super().__init__()
+        self.total_page_number = 0
+        self.page_number = page_number
+        self.page_size = page_size
+        self.default_page_size = default_page_size
+
+    def set_total_page_number(self, number, total_count):
+        self.total_page_number = number
+        self.response.update({"total_page_number": number, "total_count": total_count})
+
+    def _get_total_count(self, data):
+        if data is None:
+            return 0
+        count_method = getattr(data, "count", None)
+        if callable(count_method):
+            return count_method()
+        return len(data)
+
+    def _validate_pagination(self):
+        if self.page_number is None and self.page_size is None:
+            return None, None, None
+        if self.page_number is None or self.page_size is None:
+            return None, None, {"pagination": "Both page_number and page_size are required."}
+        serializer = serializers.Serializer(
+            data={"page_number": self.page_number, "page_size": self.page_size},
+            fields={
+                "page_number": serializers.IntegerField(min_value=1),
+                "page_size": serializers.IntegerField(min_value=1),
+            },
+        )
+        if not serializer.is_valid():
+            return None, None, serializer.errors
+        return serializer.validated_data["page_number"], serializer.validated_data["page_size"], None
+
+    def _paginate(self, data, page_number, page_size):
+        if data is None:
+            data = []
+        paginator_object = Paginator(data, page_size)
+        try:
+            datalist = paginator_object.page(page_number).object_list
+        except PageNotAnInteger:
+            datalist = paginator_object.page(1).object_list
+        except EmptyPage:
+            datalist = []
+        finally:
+            self.set_total_page_number(paginator_object.num_pages, paginator_object.count)
+        return datalist
+
+    def _set_unpaginated_response(self, data, serializer_class=None, serializer_context=None):
+        datalist = data if data is not None else []
+        if serializer_class:
+            serializer_context = serializer_context or {}
+            datalist = serializer_class(datalist, many=True, context=serializer_context).data
+        self.set_response(data=datalist)
+        total_count = self._get_total_count(data)
+        self.set_total_page_number(0 if total_count == 0 else 1, total_count)
+
+    def paginated_response(self, data=None, serializer_class=None, serializer_context=None):
+        page_number, page_size, errors = self._validate_pagination()
+        if errors:
+            return self.get_400_response(errors=errors)
+        if page_number is None and page_size is None:
+            self._set_unpaginated_response(data, serializer_class, serializer_context)
+            return self.response
+        datalist = self._paginate(data, page_number, page_size)
+        if serializer_class:
+            serializer_context = serializer_context or {}
+            datalist = serializer_class(datalist, many=True, context=serializer_context).data
+        self.set_response(data=datalist)
+        return self.response
