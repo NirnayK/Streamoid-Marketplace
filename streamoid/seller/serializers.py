@@ -1,16 +1,22 @@
 import csv
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 from pathlib import Path
 
 from openpyxl import load_workbook
-from rest_framework.serializers import FileField, Serializer, ValidationError
+from rest_framework.serializers import FileField, ModelSerializer, Serializer, ValidationError
 
 from streamoid.core.constants import MAX_NAME_LENGTH
-from streamoid.seller.constants import ALLOWED_EXTENSIONS, MAX_FILE_SIZE
+from streamoid.seller.constants import ALLOWED_EXTENSIONS, CSV, MAX_FILE_SIZE, XLSX
+from streamoid.seller.helpers import find_first_non_empty_row
+from streamoid.seller.models import SellerFiles
 
 
 class FileUploadSerialzier(Serializer):
     payload_file = FileField(max_length=MAX_NAME_LENGTH)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._file_type = None
 
     def validate_payload_file(self, file):
         self._validate_file_size(file)
@@ -31,9 +37,11 @@ class FileUploadSerialzier(Serializer):
 
     def _validate_file_contents(self, file):
         extension = Path(file.name).suffix.lower()
-        if extension == ".csv":
+        if extension == CSV:
+            self._file_type = CSV
             self._validate_csv_contents(file)
         else:
+            self._file_type = XLSX
             self._validate_excel_contents(file)
 
     def _validate_csv_contents(self, file):
@@ -49,6 +57,19 @@ class FileUploadSerialzier(Serializer):
             csv.Sniffer().sniff(sample_text)
         except csv.Error as exc:
             raise ValidationError("CSV file does not appear to be valid CSV.") from exc
+        file.seek(0)
+        text_stream = TextIOWrapper(file, encoding="utf-8-sig", newline="")
+        try:
+            reader = csv.reader(text_stream)
+            header_row = find_first_non_empty_row(reader)
+            if not header_row:
+                raise ValidationError("File does not contain any data rows.")
+            self._validate_header_row(header_row, "CSV")
+        except UnicodeDecodeError as exc:
+            raise ValidationError("CSV file must be UTF-8 encoded.") from exc
+        finally:
+            text_stream.detach()
+            file.seek(0)
 
     def _validate_excel_contents(self, file):
         file_bytes = file.read()
@@ -57,7 +78,21 @@ class FileUploadSerialzier(Serializer):
             raise ValidationError("Excel file is empty.")
         try:
             workbook = load_workbook(filename=BytesIO(file_bytes), read_only=True, data_only=True)
-            workbook.sheetnames
+            sheet = workbook.active
+            header_row = find_first_non_empty_row(sheet.iter_rows(values_only=True))
+            if not header_row:
+                raise ValidationError("File does not contain any data rows.")
+            self._validate_header_row(header_row, "Excel")
             workbook.close()
         except Exception as exc:
             raise ValidationError("Excel file could not be read.") from exc
+
+    def _validate_header_row(self, cells, file_type):
+        if not cells or any(cell == "" for cell in cells):
+            raise ValidationError(f"{file_type} header row must not contain empty columns.")
+
+
+class SellerFilesSerializer(ModelSerializer):
+    class Meta:
+        model = SellerFiles
+        fields = ("id", "name", "headers", "row_count")

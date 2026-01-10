@@ -1,13 +1,85 @@
+from loguru import logger
 from rest_framework.request import Request
 
-from streamoid.core.base_service import BaseService
-from streamoid.seller.serializers import FileUploadSerialzier
+from streamoid.core.base_service import BaseService, PaginationService
+from streamoid.core.minio import minio_remove_file, minio_store_file
+from streamoid.seller.constants import CSV, SAMPLE_ROWS_COUNT
+from streamoid.seller.decorators.validation import validate_seller
+from streamoid.seller.helpers import parse_csv, parse_excel
+from streamoid.seller.models import Seller, SellerFiles
+from streamoid.seller.serializers import FileUploadSerialzier, SellerFilesSerializer
+
+log = logger.bind(component="seller_base")
 
 
-class SellerBase(BaseService):
+class SellerHelperService:
+    def __init__(self, seller: Seller):
+        self.seller = seller
+
+    def store_file(self, bucket_name, file, file_type):
+        file_name = file.name
+        is_stored = minio_store_file(bucket_name, file_name, file)
+        if not is_stored:
+            return None
+        try:
+            path = f"{self.seller.path_uuid}/file_name"
+            seller_file = SellerFiles.objects.create(seller=self.seller, name=file.name, type=file_type, path=path)
+            return seller_file
+        except Exception as e:
+            logger.error(f"Failed to store data in db | Error {str(e)}")
+            if not minio_remove_file(bucket_name, file_name):
+                logger.warning(
+                    "Failed to cleanup MinIO file | bucket=%s object=%s",
+                    bucket_name,
+                    file_name,
+                )
+            return None
+
+
+class SellerBaseService(BaseService):
+    def __init__(self, request: Request, *args, **kwargs):
+        # Validate the seller
+        self.seller_id = request.query_params.get("seller_id")
+        self.seller = None
+        if self.seller_id:
+            self.seller = Seller.objects.filter(id=self.seller_id).last()
+
+    @validate_seller
+    def list(self, request: Request):
+        query_params = request.query_params.dict()
+        page_number, page_size = query_params.get("page_number"), query_params.get("page_size")
+        files = SellerFiles.objects.filter(seller=self.seller).order_by("-created_at")
+        return PaginationService(page_number, page_size).paginated_response(files, SellerFilesSerializer)
+
+    @validate_seller
+    def get(self, file_id):
+        file = SellerFiles.objects.filter(seller=self.seller, id=file_id).order_by("-created_at")
+        if not file.exists():
+            return self.get_404_response("File Not Found")
+        return PaginationService().paginated_response(file, SellerFilesSerializer)
+
+    @validate_seller
     def upload(self, request: Request):
+        # Validate the file
         payload_file = request.FILES.get("file")
         serializer = FileUploadSerialzier(data={"payload_file": payload_file})
         if not serializer.is_valid():
             return self.get_412_response(errors=serializer.errors)
-        
+        file_type = serializer._file_type
+
+        # Save the file in minio
+        seller_file = SellerHelperService(self.seller).store_file(self.seller.path_uuid, payload_file, file_type)
+        if not seller_file:
+            return self.get_500_response(errors="Failed to store file. Please try again later")
+
+        #  Parse the data
+        columns, sample_rows, row_count = None, None, None
+        if file_type == CSV:
+            columns, sample_rows, row_count = parse_csv(payload_file, SAMPLE_ROWS_COUNT)
+        else:
+            columns, sample_rows, row_count = parse_excel(payload_file, SAMPLE_ROWS_COUNT)
+
+        seller_file.rows_count = row_count
+        seller_file.save()
+
+        return self.get_200_response(data={"columns": columns, "sample_rows": sample_rows, "row_count": row_count})
