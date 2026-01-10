@@ -22,7 +22,7 @@ class SellerHelperService:
         if not is_stored:
             return None
         try:
-            path = f"{self.seller.path_uuid}/file_name"
+            path = f"{self.seller.bucket_name}/file_name"
             seller_file = SellerFiles.objects.create(seller=self.seller, name=file.name, type=file_type, path=path)
             return seller_file
         except Exception as e:
@@ -68,18 +68,20 @@ class SellerBaseService(BaseService):
         file_type = serializer._file_type
 
         # Save the file in minio
-        seller_file = SellerHelperService(self.seller).store_file(self.seller.path_uuid, payload_file, file_type)
+        seller_file = SellerHelperService(self.seller).store_file(self.seller.bucket_name, payload_file, file_type)
         if not seller_file:
             return self.get_500_response(errors="Failed to store file. Please try again later")
 
         #  Parse the data
-        columns, sample_rows, row_count = None, None, None
+        headers, sample_rows, row_count = None, None, None
         if file_type == CSV:
-            columns, sample_rows, row_count = parse_csv(payload_file, SAMPLE_ROWS_COUNT)
+            headers, sample_rows, row_count = parse_csv(payload_file, SAMPLE_ROWS_COUNT)
         else:
-            columns, sample_rows, row_count = parse_excel(payload_file, SAMPLE_ROWS_COUNT)
+            headers, sample_rows, row_count = parse_excel(payload_file, SAMPLE_ROWS_COUNT)
 
         seller_file.rows_count = row_count
-        seller_file.save()
+        seller_file.headers = headers
+        seller_file.sample_rows = sample_rows
+        seller_file.save(update_fields=["rows_count", "headers", "sample_rows", "updated_at"])
 
-        return self.get_200_response(data={"columns": columns, "sample_rows": sample_rows, "row_count": row_count})
+        return PaginationService().set_response(seller_file, SellerFilesSerializer)

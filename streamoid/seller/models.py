@@ -14,13 +14,22 @@ class ContentType(models.TextChoices):
 
 class Seller(BaseModel):
     name = models.CharField(max_length=MAX_NAME_LENGTH)
-    path_uuid = models.UUIDField(default=uuid.uuid4)
+    bucket_name = models.UUIDField(default=uuid.uuid4)
+
+    def __str__(self):
+        return f"<Seller: {self.id} | Name: {self.name} | Bucket Name: {self.bucket_name}"
 
 
 class SellerFiles(BaseModel):
     seller = models.ForeignKey(Seller, on_delete=models.SET_NULL)
+
     name = models.CharField(max_length=MAX_NAME_LENGTH)
     type = models.CharField(max_length=MAX_NAME_LENGTH, choices=ContentType.choices)
     path = models.CharField(max_length=MAX_FILE_PATH_LENGTH)
-    headers = models.JSONField(default=list)
+
     rows_count = models.IntegerField(default=0)
+    headers = models.JSONField(default=list)
+    sample_rows = models.JSONField(default=list)
+
+    def __str__(self):
+        return f"<SellerFiles: {self.id} | Rows Count: {self.rows_count} | Path: {self.path} "

@@ -95,4 +95,4 @@ class FileUploadSerialzier(Serializer):
 class SellerFilesSerializer(ModelSerializer):
     class Meta:
         model = SellerFiles
-        fields = ("id", "name", "headers", "row_count")
+        fields = ("id", "name", "headers", "row_count", "sample_rows")
