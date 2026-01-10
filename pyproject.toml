@@ -6,7 +6,23 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "django>=6.0.1",
+    "djangorestframework>=3.16.1",
+    "loguru>=0.7.3",
     "minio>=7.2.20",
     "mysqlclient>=2.2.7",
+    "openpyxl>=3.1.5",
+    "python-dotenv>=1.2.1",
     "uvicorn>=0.40.0",
+]
+
+[tool.ruff]
+line-length = 115
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.11",
 ]

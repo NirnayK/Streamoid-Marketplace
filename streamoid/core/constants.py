@@ -1,0 +1,2 @@
+PRODUCTION = "production"
+MAX_NAME_LENGTH = 255

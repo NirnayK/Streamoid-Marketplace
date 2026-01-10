@@ -1,0 +1,63 @@
+import csv
+from io import BytesIO
+from pathlib import Path
+
+from openpyxl import load_workbook
+from rest_framework.serializers import FileField, Serializer, ValidationError
+
+from streamoid.core.constants import MAX_NAME_LENGTH
+from streamoid.seller.constants import ALLOWED_EXTENSIONS, MAX_FILE_SIZE
+
+
+class FileUploadSerialzier(Serializer):
+    payload_file = FileField(max_length=MAX_NAME_LENGTH)
+
+    def validate_payload_file(self, file):
+        self._validate_file_size(file)
+        self._validate_file_type(file)
+        self._validate_file_contents(file)
+        return file
+
+    def _validate_file_type(self, file):
+        allowed_extensions = ALLOWED_EXTENSIONS
+        extension = Path(file.name).suffix.lower()
+        if extension not in allowed_extensions:
+            raise ValidationError("Unsupported file type. Only CSV or Excel files are allowed.")
+
+    def _validate_file_size(self, file):
+        max_size_bytes = MAX_FILE_SIZE
+        if file.size > max_size_bytes:
+            raise ValidationError("File size exceeds 10 MB limit.")
+
+    def _validate_file_contents(self, file):
+        extension = Path(file.name).suffix.lower()
+        if extension == ".csv":
+            self._validate_csv_contents(file)
+        else:
+            self._validate_excel_contents(file)
+
+    def _validate_csv_contents(self, file):
+        sample_bytes = file.read(8192)
+        file.seek(0)
+        if not sample_bytes:
+            raise ValidationError("CSV file is empty.")
+        try:
+            sample_text = sample_bytes.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise ValidationError("CSV file must be UTF-8 encoded.") from exc
+        try:
+            csv.Sniffer().sniff(sample_text)
+        except csv.Error as exc:
+            raise ValidationError("CSV file does not appear to be valid CSV.") from exc
+
+    def _validate_excel_contents(self, file):
+        file_bytes = file.read()
+        file.seek(0)
+        if not file_bytes:
+            raise ValidationError("Excel file is empty.")
+        try:
+            workbook = load_workbook(filename=BytesIO(file_bytes), read_only=True, data_only=True)
+            workbook.sheetnames
+            workbook.close()
+        except Exception as exc:
+            raise ValidationError("Excel file could not be read.") from exc
