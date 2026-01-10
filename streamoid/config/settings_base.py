@@ -156,5 +156,5 @@ def init_logging(log_dir: Path, log_level: str) -> None:
     )
 
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-    for name in ("django", "uvicorn", "uvicorn.error", "uvicorn.access"):
+    for name in ("django", "gunicorn", "gunicorn.error", "gunicorn.access"):
         logging.getLogger(name).handlers = [InterceptHandler()]
