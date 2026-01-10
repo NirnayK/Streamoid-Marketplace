@@ -1,0 +1,12 @@
+[project]
+name = "streamoid-marketplace"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.0.1",
+    "minio>=7.2.20",
+    "mysqlclient>=2.2.7",
+    "uvicorn>=0.40.0",
+]
