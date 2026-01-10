@@ -5,10 +5,10 @@ from pathlib import Path
 from openpyxl import load_workbook
 from rest_framework.serializers import FileField, ModelSerializer, Serializer, ValidationError
 
-from streamoid.core.constants import MAX_NAME_LENGTH
-from streamoid.seller.constants import ALLOWED_EXTENSIONS, CSV, MAX_FILE_SIZE, XLSX
-from streamoid.seller.helpers import find_first_non_empty_row
-from streamoid.seller.models import SellerFiles
+from core.constants import MAX_NAME_LENGTH
+from seller.constants import ALLOWED_EXTENSIONS, CSV, MAX_FILE_SIZE, XLSX
+from seller.helpers import find_first_non_empty_row
+from seller.models import SellerFiles
 
 
 class FileUploadSerialzier(Serializer):

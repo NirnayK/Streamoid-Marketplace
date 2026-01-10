@@ -1,6 +1,6 @@
 from functools import wraps
 
-from streamoid.core.base_service import BaseService
+from core.base_service import BaseService
 
 
 def validate_seller(func):

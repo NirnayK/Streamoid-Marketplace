@@ -1,13 +1,13 @@
 from loguru import logger
 from rest_framework.request import Request
 
-from streamoid.core.base_service import BaseService, PaginationService
-from streamoid.core.minio import minio_remove_file, minio_store_file
-from streamoid.seller.constants import CSV, SAMPLE_ROWS_COUNT
-from streamoid.seller.decorators.validation import validate_seller
-from streamoid.seller.helpers import parse_csv, parse_excel
-from streamoid.seller.models import Seller, SellerFiles
-from streamoid.seller.serializers import FileUploadSerialzier, SellerFilesSerializer
+from core.base_service import BaseService, PaginationService
+from core.minio import minio_remove_file, minio_store_file
+from seller.constants import CSV, SAMPLE_ROWS_COUNT
+from seller.decorators.validation import validate_seller
+from seller.helpers import parse_csv, parse_excel
+from seller.models import Seller, SellerFiles
+from seller.serializers import FileUploadSerialzier, SellerFilesSerializer
 
 log = logger.bind(component="seller_base")
 

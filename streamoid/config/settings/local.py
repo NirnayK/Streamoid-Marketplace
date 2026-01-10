@@ -3,8 +3,8 @@ import os
 
 from dotenv import load_dotenv
 
-from . import settings_base as base
-from .settings_base import *  # noqa: F403, F401
+from config import settings_base as base
+from config.settings_base import *  # noqa: F403, F401
 
 load_dotenv(base.BASE_DIR / ".env.local")
 

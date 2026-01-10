@@ -1,4 +1,5 @@
 PRODUCTION = "production"
+LOCAL = "local"
 MAX_NAME_LENGTH = 255
 HEAD_DATA = {
     "Access-Control-Allow-Origin": "*",

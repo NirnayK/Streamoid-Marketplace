@@ -5,8 +5,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from streamoid.core.constants import HEAD_DATA
-from streamoid.seller.services.seller_base import SellerBaseService
+from core.constants import HEAD_DATA
+from seller.services.seller_base import SellerBaseService
 
 
 class SellerView(APIView):

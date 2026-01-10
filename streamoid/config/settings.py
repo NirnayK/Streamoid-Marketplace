@@ -1,10 +1,10 @@
 import os
 
-from streamoid.core.constants import PRODUCTION
+from core.constants import LOCAL, PRODUCTION
 
-env = os.getenv("DJANGO_ENV", "local").lower()
+env = os.getenv("DJANGO_ENV", LOCAL).lower()
 
 if env == PRODUCTION:
-    from settings.production import *  # noqa: F403, F401
+    from config.settings.production import *  # noqa: F403, F401
 else:
-    from settings.local import *  # noqa: F403, F401
+    from config.settings.local import *  # noqa: F403, F401

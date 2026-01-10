@@ -35,6 +35,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "seller",
+    "marketplace",
+    "mapping",
 ]
 
 MIDDLEWARE = [
@@ -65,6 +68,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # Database

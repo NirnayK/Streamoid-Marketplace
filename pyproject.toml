@@ -22,6 +22,9 @@ line-length = 115
 select = ["E", "F", "I"]
 ignore = ["E501"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["config", "core", "marketplace", "mapping", "seller"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.14.11",

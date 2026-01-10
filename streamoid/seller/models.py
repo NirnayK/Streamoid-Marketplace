@@ -2,9 +2,9 @@ import uuid
 
 from django.db import models
 
-from streamoid.core.constants import MAX_NAME_LENGTH
-from streamoid.core.models import BaseModel
-from streamoid.seller.constants import MAX_FILE_PATH_LENGTH
+from core.constants import MAX_NAME_LENGTH
+from core.models import BaseModel
+from seller.constants import MAX_FILE_PATH_LENGTH
 
 
 class ContentType(models.TextChoices):

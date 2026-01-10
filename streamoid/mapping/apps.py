@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class MappingConfig(AppConfig):
-    name = 'mapping'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "mapping"

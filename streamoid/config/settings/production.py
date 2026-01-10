@@ -3,8 +3,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from streamoid.config import settings_base as base
-from streamoid.config.settings_base import *  # noqa: F403, F401
+from config import settings_base as base
+from config.settings_base import *  # noqa: F403, F401
 
 load_dotenv(base.BASE_DIR / ".env")
 load_dotenv(Path("/run/secrets/app_env"), override=True)
