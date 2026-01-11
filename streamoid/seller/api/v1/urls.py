@@ -1,9 +1,9 @@
 from django.urls import path
 
-from .views import SellerView
+from .views import SellerDetailView, SellerView
 
 urlpatterns = [
-    path("<int:file_id>/", SellerView.as_view(), name="seller-details"),
+    path("<int:file_id>/", SellerDetailView.as_view(), name="seller-details"),
     path("", SellerView.as_view(), name="seller"),
 ]
 

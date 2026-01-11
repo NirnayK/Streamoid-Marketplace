@@ -12,6 +12,8 @@ dependencies = [
     "minio>=7.2.20",
     "mysqlclient>=2.2.7",
     "openpyxl>=3.1.5",
+    "pytest>=9.0.2",
+    "pytest-django>=4.11.1",
     "python-dotenv>=1.2.1",
 ]
 
@@ -24,8 +26,15 @@ ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["config", "core", "marketplace", "mapping", "seller"]
+known-third-party = ["django", "rest_framework"]
 
 [dependency-groups]
 dev = [
+    "pytest>=9.0.2",
+    "pytest-django>=4.11.1",
     "ruff>=0.14.11",
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["streamoid"]

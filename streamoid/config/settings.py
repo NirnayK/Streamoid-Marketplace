@@ -1,10 +1,2 @@
-import os
-
-from core.constants import LOCAL, PRODUCTION
-
-env = os.getenv("DJANGO_ENV", LOCAL).lower()
-
-if env == PRODUCTION:
-    from config.settings.production import *  # noqa: F403, F401
-else:
-    from config.settings.local import *  # noqa: F403, F401
+# Re-export settings from the package so config.settings remains a valid module path.
+from config.settings import *  # noqa: F403, F401

@@ -13,6 +13,10 @@
                 "source.organizeImports.ruff": "always"
             }
         },
+        "python.analysis.autoSearchPaths": false,
+        "python.analysis.extraPaths": [
+            "./streamoid"
+        ],
         "files.exclude": {
             "**/__pycache__/**": true
         }

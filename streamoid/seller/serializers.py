@@ -3,9 +3,10 @@ from io import BytesIO, TextIOWrapper
 from pathlib import Path
 
 from openpyxl import load_workbook
-from rest_framework.serializers import FileField, ModelSerializer, Serializer, ValidationError
+from rest_framework.serializers import FileField, Serializer, ValidationError
 
 from core.constants import MAX_NAME_LENGTH
+from core.serializers import ModelSerializerBase
 from seller.constants import ALLOWED_EXTENSIONS, CSV, MAX_FILE_SIZE, XLSX
 from seller.helpers import find_first_non_empty_row
 from seller.models import SellerFiles
@@ -92,7 +93,7 @@ class FileUploadSerialzier(Serializer):
             raise ValidationError(f"{file_type} header row must not contain empty columns.")
 
 
-class SellerFilesSerializer(ModelSerializer):
+class SellerFilesSerializer(ModelSerializerBase):
     class Meta:
         model = SellerFiles
-        fields = ("id", "name", "headers", "row_count", "sample_rows")
+        fields = ModelSerializerBase.Meta.fields + ("name", "headers", "row_count", "sample_rows")

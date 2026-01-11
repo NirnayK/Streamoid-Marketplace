@@ -13,7 +13,7 @@ SECRET_KEY = os.getenv(
     "django-insecure-i*82p@2(y@e9mpq^zic)rh*h&^4z87o8i%$3jegcibhd6sz=_d",
 )
 DEBUG = base.env_bool("DJANGO_DEBUG", True)
-ALLOWED_HOSTS = base.env_list("DJANGO_ALLOWED_HOSTS", default=[])
+ALLOWED_HOSTS = base.env_list("DJANGO_ALLOWED_HOSTS", default=["0.0.0.0", "127.0.0.1", "localhost"])
 
 LOG_DIR = base.BASE_DIR / "logs"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
