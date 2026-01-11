@@ -11,6 +11,8 @@ class MarketplaceSerializer(ModelSerializerBase):
 
 
 class MarketplaceTemplateListSerializer(ModelSerializerBase):
+    marketplace = MarketplaceSerializer()
+
     class Meta:
         model = MarketplaceTempate
         fields = ModelSerializerBase.Meta.fields + ("marketplace", "template")
