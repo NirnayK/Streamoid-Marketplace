@@ -30,11 +30,9 @@ class MarketplaceService(BaseService):
 
     @validate_marketplace
     def get(self, marketplace_template_id):
-        template = (
-            MarketplaceTempate.objects.filter(marketplace=self.marketplace, id=marketplace_template_id)
-            .select_related("marketplace")
-            .order_by("-created_at")
-        )
+        template = MarketplaceTempate.objects.filter(
+            marketplace=self.marketplace, id=marketplace_template_id
+        ).select_related("marketplace")
         if not template.exists():
             return self.get_404_response("File Not Found")
         return PaginationService().paginated_response(template, MarketplaceTemplateListSerializer)

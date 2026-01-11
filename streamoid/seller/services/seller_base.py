@@ -53,11 +53,7 @@ class SellerBaseService(BaseService):
 
     @validate_seller
     def get(self, file_id):
-        file = (
-            SellerFiles.objects.filter(seller=self.seller, id=file_id)
-            .select_related("seller")
-            .order_by("-created_at")
-        )
+        file = SellerFiles.objects.filter(seller=self.seller, id=file_id).select_related("seller")
         if not file.exists():
             return self.get_404_response("File Not Found")
         return PaginationService().paginated_response(file, SellerFilesSerializer)

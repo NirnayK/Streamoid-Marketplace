@@ -25,7 +25,3 @@ class MarketplaceTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketplaceTempate
         fields = ("marketplace", "template")
-
-    def create(self, validated_data):
-        marketplace_template = MarketplaceTempate.objects.create(**validated_data)
-        return marketplace_template
