@@ -18,7 +18,9 @@
             "./streamoid"
         ],
         "files.exclude": {
-            "**/__pycache__/**": true
+            "**/__pycache__/**": true,
+            "**/.venv/**": true,
+            "**/.pytest_cache/**": true
         }
     }
 }

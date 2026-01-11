@@ -48,12 +48,16 @@ class SellerBaseService(BaseService):
     def list(self, request: Request):
         query_params = request.query_params.dict()
         page_number, page_size = query_params.get("page_number"), query_params.get("page_size")
-        files = SellerFiles.objects.filter(seller=self.seller).order_by("-created_at")
+        files = SellerFiles.objects.filter(seller=self.seller).select_related("seller").order_by("-created_at")
         return PaginationService(page_number, page_size).paginated_response(files, SellerFilesSerializer)
 
     @validate_seller
     def get(self, file_id):
-        file = SellerFiles.objects.filter(seller=self.seller, id=file_id).order_by("-created_at")
+        file = (
+            SellerFiles.objects.filter(seller=self.seller, id=file_id)
+            .select_related("seller")
+            .order_by("-created_at")
+        )
         if not file.exists():
             return self.get_404_response("File Not Found")
         return PaginationService().paginated_response(file, SellerFilesSerializer)

@@ -9,7 +9,21 @@ from core.constants import MAX_NAME_LENGTH
 from core.serializers import ModelSerializerBase
 from seller.constants import ALLOWED_EXTENSIONS, CSV, MAX_FILE_SIZE, XLSX
 from seller.helpers import find_first_non_empty_row
-from seller.models import SellerFiles
+from seller.models import Seller, SellerFiles
+
+
+class SellerSerializer(ModelSerializerBase):
+    class Meta:
+        model = Seller
+        fields = ModelSerializerBase.Meta.fields + ("name",)
+
+
+class SellerFilesSerializer(ModelSerializerBase):
+    seller = SellerSerializer()
+
+    class Meta:
+        model = SellerFiles
+        fields = ModelSerializerBase.Meta.fields + ("name", "seller", "headers", "rows_count", "sample_rows")
 
 
 class FileUploadSerialzier(Serializer):
@@ -91,9 +105,3 @@ class FileUploadSerialzier(Serializer):
     def _validate_header_row(self, cells, file_type):
         if not cells or any(cell == "" for cell in cells):
             raise ValidationError(f"{file_type} header row must not contain empty columns.")
-
-
-class SellerFilesSerializer(ModelSerializerBase):
-    class Meta:
-        model = SellerFiles
-        fields = ModelSerializerBase.Meta.fields + ("name", "headers", "row_count", "sample_rows")
