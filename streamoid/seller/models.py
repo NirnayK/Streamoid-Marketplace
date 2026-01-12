@@ -1,8 +1,10 @@
 import uuid
+from pathlib import Path
 
 from django.db import models
 
 from core.constants import MAX_NAME_LENGTH
+from core.minio import MinioHandler
 from core.models import BaseModel
 from seller.constants import MAX_FILE_PATH_LENGTH
 
@@ -34,3 +36,9 @@ class SellerFiles(BaseModel):
 
     def __str__(self):
         return f"<SellerFiles: {self.id} | Rows Count: {self.rows_count} | Path: {self.path} "
+
+    @property
+    def file(self):
+        bucket_name = Path(self.path).parent.name
+        file_name = self.name
+        return MinioHandler().get_file(bucket_name, file_name)

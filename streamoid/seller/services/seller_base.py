@@ -1,11 +1,13 @@
+from pathlib import Path
+
 from loguru import logger
 from rest_framework.request import Request
 
 from core.base_service import BaseService, PaginationService
-from core.minio import minio_remove_file, minio_store_file
+from core.minio import MinioHandler
 from seller.constants import CSV, SAMPLE_ROWS_COUNT
 from seller.decorators.validation import validate_seller
-from seller.helpers import parse_csv, parse_excel
+from seller.file_parser import FileParser
 from seller.models import Seller, SellerFiles
 from seller.serializers import FileUploadSerialzier, SellerFilesSerializer
 
@@ -15,19 +17,25 @@ log = logger.bind(component="seller_base")
 class SellerHelperService:
     def __init__(self, seller: Seller):
         self.seller = seller
+        self.minio = MinioHandler()
 
     def store_file(self, bucket_name, file, file_type):
         file_name = file.name
-        is_stored = minio_store_file(bucket_name, file_name, file)
+        is_stored = self.minio.store_file(bucket_name, file_name, file)
         if not is_stored:
             return None
         try:
-            path = f"{self.seller.bucket_name}/file_name"
-            seller_file = SellerFiles.objects.create(seller=self.seller, name=file.name, type=file_type, path=path)
+            path = Path(str(bucket_name)).joinpath(file_name)
+            seller_file = SellerFiles.objects.create(
+                seller=self.seller,
+                name=file.name,
+                type=file_type,
+                path=str(path),
+            )
             return seller_file
         except Exception as e:
             logger.error(f"Failed to store data in db | Error {str(e)}")
-            if not minio_remove_file(bucket_name, file_name):
+            if not self.minio.remove_file(bucket_name, file_name):
                 logger.warning(
                     "Failed to cleanup MinIO file | bucket=%s object=%s",
                     bucket_name,
@@ -75,9 +83,9 @@ class SellerBaseService(BaseService):
         #  Parse the data
         headers, sample_rows, row_count = None, None, None
         if file_type == CSV:
-            headers, sample_rows, row_count = parse_csv(payload_file, SAMPLE_ROWS_COUNT)
+            headers, sample_rows, row_count = FileParser.parse_csv(payload_file, SAMPLE_ROWS_COUNT)
         else:
-            headers, sample_rows, row_count = parse_excel(payload_file, SAMPLE_ROWS_COUNT)
+            headers, sample_rows, row_count = FileParser.parse_excel(payload_file, SAMPLE_ROWS_COUNT)
 
         seller_file.rows_count = row_count
         seller_file.headers = headers

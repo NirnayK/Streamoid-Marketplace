@@ -8,7 +8,7 @@ from rest_framework.serializers import FileField, Serializer, ValidationError
 from core.constants import MAX_NAME_LENGTH
 from core.serializers import ModelSerializerBase
 from seller.constants import ALLOWED_EXTENSIONS, CSV, MAX_FILE_SIZE, XLSX
-from seller.helpers import find_first_non_empty_row
+from seller.file_parser import FileParser
 from seller.models import Seller, SellerFiles
 
 
@@ -34,10 +34,18 @@ class FileUploadSerialzier(Serializer):
         self._file_type = None
 
     def validate_payload_file(self, file):
+        self._validate_file_name(file)
         self._validate_file_size(file)
         self._validate_file_type(file)
         self._validate_file_contents(file)
         return file
+
+    def _validate_file_name(self, file):
+        name = file.name
+        if not name or name.strip() in {".", ".."}:
+            raise ValidationError("File name is invalid.")
+        if Path(name).name != name:
+            raise ValidationError("File name must not include path separators.")
 
     def _validate_file_type(self, file):
         allowed_extensions = ALLOWED_EXTENSIONS
@@ -76,7 +84,7 @@ class FileUploadSerialzier(Serializer):
         text_stream = TextIOWrapper(file, encoding="utf-8-sig", newline="")
         try:
             reader = csv.reader(text_stream)
-            header_row = find_first_non_empty_row(reader)
+            header_row = FileParser.find_first_non_empty_row(reader)
             if not header_row:
                 raise ValidationError("File does not contain any data rows.")
             self._validate_header_row(header_row, "CSV")
@@ -94,7 +102,7 @@ class FileUploadSerialzier(Serializer):
         try:
             workbook = load_workbook(filename=BytesIO(file_bytes), read_only=True, data_only=True)
             sheet = workbook.active
-            header_row = find_first_non_empty_row(sheet.iter_rows(values_only=True))
+            header_row = FileParser.find_first_non_empty_row(sheet.iter_rows(values_only=True))
             if not header_row:
                 raise ValidationError("File does not contain any data rows.")
             self._validate_header_row(header_row, "Excel")

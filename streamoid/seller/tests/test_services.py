@@ -58,8 +58,8 @@ def build_request(api_rf, method="get", seller_id=None, upload=None):
     return Request(django_request)
 
 
-@patch("seller.services.seller_base.minio_store_file", return_value=False)
-def test_store_file_returns_none_when_minio_store_fails(_minio_store_file, seller, upload_csv):
+@patch("seller.services.seller_base.MinioHandler.store_file", return_value=False)
+def test_store_file_returns_none_when_minio_store_fails(_store_file, seller, upload_csv):
     service = SellerHelperService(seller)
     result = service.store_file("bucket", upload_csv, CSV)
 
@@ -67,21 +67,21 @@ def test_store_file_returns_none_when_minio_store_fails(_minio_store_file, selle
     assert SellerFiles.objects.count() == 0
 
 
-@patch("seller.services.seller_base.minio_remove_file", return_value=True)
+@patch("seller.services.seller_base.MinioHandler.remove_file", return_value=True)
 @patch("seller.services.seller_base.SellerFiles.objects.create", side_effect=Exception("boom"))
-@patch("seller.services.seller_base.minio_store_file", return_value=True)
+@patch("seller.services.seller_base.MinioHandler.store_file", return_value=True)
 def test_store_file_cleans_up_on_db_failure(
-    _minio_store_file, _seller_create, minio_remove_file, seller, upload_csv
+    _store_file, _seller_create, remove_file, seller, upload_csv
 ):
     service = SellerHelperService(seller)
     result = service.store_file("bucket", upload_csv, CSV)
 
     assert result is None
-    minio_remove_file.assert_called_once_with("bucket", "items.csv")
+    remove_file.assert_called_once_with("bucket", "items.csv")
 
 
-@patch("seller.services.seller_base.minio_store_file", return_value=True)
-def test_store_file_creates_seller_file(_minio_store_file, seller, upload_csv):
+@patch("seller.services.seller_base.MinioHandler.store_file", return_value=True)
+def test_store_file_creates_seller_file(_store_file, seller, upload_csv):
     service = SellerHelperService(seller)
     result = service.store_file("bucket", upload_csv, CSV)
 
@@ -89,7 +89,7 @@ def test_store_file_creates_seller_file(_minio_store_file, seller, upload_csv):
     assert result.seller == seller
     assert result.name == "items.csv"
     assert result.type == CSV
-    assert result.path == f"{seller.bucket_name}/file_name"
+    assert result.path == "bucket/items.csv"
     assert SellerFiles.objects.count() == 1
 
 
@@ -174,7 +174,7 @@ def test_upload_returns_500_when_storage_fails(_store_file, api_rf, seller, uplo
 
 
 @patch("seller.services.seller_base.PaginationService.set_response", return_value={"ok": True})
-@patch("seller.services.seller_base.parse_csv", return_value=(["sku", "name"], [["1", "Widget"]], 1))
+@patch("seller.services.seller_base.FileParser.parse_csv", return_value=(["sku", "name"], [["1", "Widget"]], 1))
 def test_upload_updates_rows_count_and_sets_metadata(_parse_csv, set_response, api_rf, seller, upload_csv):
     seller_file = SellerFiles.objects.create(seller=seller, name="items.csv", type=CSV, path="bucket/items.csv")
     request = build_request(api_rf, method="post", seller_id=seller.id, upload=upload_csv)
@@ -194,7 +194,7 @@ def test_upload_updates_rows_count_and_sets_metadata(_parse_csv, set_response, a
 
 
 @patch("seller.services.seller_base.PaginationService.set_response", return_value={"ok": True})
-@patch("seller.services.seller_base.parse_excel", return_value=(["sku", "name"], [["1", "Widget"]], 1))
+@patch("seller.services.seller_base.FileParser.parse_excel", return_value=(["sku", "name"], [["1", "Widget"]], 1))
 def test_upload_uses_excel_parser(_parse_excel, set_response, api_rf, seller, upload_xlsx):
     seller_file = SellerFiles.objects.create(
         seller=seller, name="items.xlsx", type=".xlsx", path="bucket/items.xlsx"

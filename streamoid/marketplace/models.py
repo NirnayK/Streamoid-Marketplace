@@ -14,7 +14,7 @@ class Marketplace(BaseModel):
 
 class MarketplaceTempate(BaseModel):
     marketplace = models.ForeignKey(Marketplace, on_delete=models.CASCADE)
-    template = models.JSONField()
+    template = models.JSONField(default=dict)
 
     def __str__(self):
         return f"<MarketplaceTempate: {self.id} | Marketplace: {self.marketplace_id}"

@@ -1,5 +1,8 @@
+from types import SimpleNamespace
+
 from rest_framework import serializers
 
+from core.custom_validation import CustomValidatior
 from core.serializers import ModelSerializerBase
 from marketplace.models import Marketplace, MarketplaceTempate
 
@@ -24,4 +27,11 @@ class MarketplaceTemplateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MarketplaceTempate
-        fields = ("marketplace", "template")
+        fields = ("marketplace_id", "template")
+
+    def validate_template(self, template):
+        validator = CustomValidatior(template=SimpleNamespace(template=template))
+        serializer_class = validator.build()
+        if serializer_class is None:
+            raise serializers.ValidationError("Invalid template schema")
+        return template
