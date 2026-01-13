@@ -3,22 +3,28 @@ from types import SimpleNamespace
 from rest_framework import serializers
 
 from core.custom_validation import CustomValidatior
-from core.serializers import ModelSerializerBase
+from core.serializers import CreateBaseSerializer, DetailsBaseSerializer
 from marketplace.models import Marketplace, MarketplaceTempate
 
 
-class MarketplaceSerializer(ModelSerializerBase):
+class MarketplaceSerializer(DetailsBaseSerializer):
     class Meta:
         model = Marketplace
-        fields = ModelSerializerBase.Meta.fields + ("name",)
+        fields = DetailsBaseSerializer.Meta.fields + ("name",)
 
 
-class MarketplaceTemplateListSerializer(ModelSerializerBase):
+class MarketplaceCreateSerializer(CreateBaseSerializer):
+    class Meta:
+        model = Marketplace
+        fields = ("name",)
+
+
+class MarketplaceTemplateListSerializer(DetailsBaseSerializer):
     marketplace = MarketplaceSerializer()
 
     class Meta:
         model = MarketplaceTempate
-        fields = ModelSerializerBase.Meta.fields + ("marketplace", "template")
+        fields = DetailsBaseSerializer.Meta.fields + ("marketplace", "template")
 
 
 class MarketplaceTemplateSerializer(serializers.ModelSerializer):

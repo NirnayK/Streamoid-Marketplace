@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "drf_spectacular",
     "seller",
     "marketplace",
     "mapping",
@@ -70,6 +72,17 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    # Use drf-spectacular for OpenAPI schema generation.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Streamoid Marketplace API",
+    "DESCRIPTION": "API documentation for Streamoid Marketplace services.",
+    "VERSION": "1.0.0",
+}
 
 
 # Database
@@ -121,6 +134,11 @@ MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "")
 MINIO_SECURE = env_bool("MINIO_SECURE", False)
 MINIO_REGION = os.getenv("MINIO_REGION", "")
+
+# Cron schedules (for django-crontab or external scheduler wiring).
+CRONJOBS = [
+    ("*/15 * * * *", "cron.file_transformer_cron.FileTransformerCron.run"),
+]
 
 
 class InterceptHandler(logging.Handler):

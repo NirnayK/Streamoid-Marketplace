@@ -1,19 +1,62 @@
 from copy import copy
 
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import HEAD_DATA
+from core.schema import PAGE_NUMBER_PARAMETER, PAGE_SIZE_PARAMETER
+from core.serializers import ErrorResponseSerializer
+from marketplace.schema_serializers import (
+    MarketplaceResponseSerializer,
+    MarketplaceTemplateCreateRequestSerializer,
+    MarketplaceTemplateListResponseSerializer,
+)
+from marketplace.serializers import MarketplaceCreateSerializer
 from marketplace.services.marketplace_base import MarketplaceService
+
+MARKETPLACE_ID_PARAMETER = OpenApiParameter(
+    name="marketplace_id",
+    type=OpenApiTypes.INT,
+    location=OpenApiParameter.QUERY,
+    required=True,
+    description="ID of the marketplace that owns the templates.",
+)
+MARKETPLACE_TEMPLATE_ID_PARAMETER = OpenApiParameter(
+    name="marketplace_template_id",
+    type=OpenApiTypes.INT,
+    location=OpenApiParameter.PATH,
+    required=True,
+    description="ID of the marketplace template.",
+)
 
 
 class MarketplaceTemplateView(APIView):
+    @extend_schema(
+        parameters=[MARKETPLACE_ID_PARAMETER, PAGE_NUMBER_PARAMETER, PAGE_SIZE_PARAMETER],
+        responses={
+            200: MarketplaceTemplateListResponseSerializer,
+            400: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+            412: ErrorResponseSerializer,
+        },
+    )
     def get(self, request: Request, *args, **kwargs):
         response = MarketplaceService(request).list(request)
         return Response(response, status=response.get("code"), headers=HEAD_DATA)
 
+    @extend_schema(
+        request=MarketplaceTemplateCreateRequestSerializer,
+        parameters=[MARKETPLACE_ID_PARAMETER],
+        responses={
+            200: MarketplaceTemplateListResponseSerializer,
+            404: ErrorResponseSerializer,
+            412: ErrorResponseSerializer,
+            500: ErrorResponseSerializer,
+        },
+    )
     def post(self, request: Request, *args, **kwargs):
         response = MarketplaceService(request).post(request)
         return Response(response, status=response.get("code"), headers=HEAD_DATA)
@@ -24,7 +67,34 @@ class MarketplaceTemplateView(APIView):
         return Response({}, status=status.HTTP_200_OK, headers=HEAD_DATA)
 
 
+class MarketplaceView(APIView):
+    @extend_schema(
+        request=MarketplaceCreateSerializer,
+        responses={
+            201: MarketplaceResponseSerializer,
+            412: ErrorResponseSerializer,
+            500: ErrorResponseSerializer,
+        },
+    )
+    def post(self, request: Request, *args, **kwargs):
+        response = MarketplaceService(request).create(request)
+        return Response(response, status=response.get("code"), headers=HEAD_DATA)
+
+    def options(self, request: Request, *args, **kwargs):
+        head_data = copy(HEAD_DATA)
+        head_data["Access-Control-Allow-Methods"] = "POST"
+        return Response({}, status=status.HTTP_200_OK, headers=head_data)
+
+
 class MarketplaceTemplateDetailView(APIView):
+    @extend_schema(
+        parameters=[MARKETPLACE_ID_PARAMETER, MARKETPLACE_TEMPLATE_ID_PARAMETER],
+        responses={
+            200: MarketplaceTemplateListResponseSerializer,
+            404: ErrorResponseSerializer,
+            412: ErrorResponseSerializer,
+        },
+    )
     def get(self, request: Request, *args, **kwargs):
         marketplace_template_id = kwargs.get("marketplace_template_id")
         response = MarketplaceService(request).get(marketplace_template_id)

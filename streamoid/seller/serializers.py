@@ -6,24 +6,30 @@ from openpyxl import load_workbook
 from rest_framework.serializers import FileField, Serializer, ValidationError
 
 from core.constants import MAX_NAME_LENGTH
-from core.serializers import ModelSerializerBase
+from core.serializers import CreateBaseSerializer, DetailsBaseSerializer
 from seller.constants import ALLOWED_EXTENSIONS, CSV, MAX_FILE_SIZE, XLSX
 from seller.file_parser import FileParser
 from seller.models import Seller, SellerFiles
 
 
-class SellerSerializer(ModelSerializerBase):
+class SellerSerializer(DetailsBaseSerializer):
     class Meta:
         model = Seller
-        fields = ModelSerializerBase.Meta.fields + ("name",)
+        fields = DetailsBaseSerializer.Meta.fields + ("name",)
 
 
-class SellerFilesSerializer(ModelSerializerBase):
+class SellerCreateSerializer(CreateBaseSerializer):
+    class Meta:
+        model = Seller
+        fields = ("name",)
+
+
+class SellerFilesSerializer(DetailsBaseSerializer):
     seller = SellerSerializer()
 
     class Meta:
         model = SellerFiles
-        fields = ModelSerializerBase.Meta.fields + ("name", "seller", "headers", "rows_count", "sample_rows")
+        fields = DetailsBaseSerializer.Meta.fields + ("name", "seller", "headers", "rows_count", "sample_rows")
 
 
 class FileUploadSerialzier(Serializer):

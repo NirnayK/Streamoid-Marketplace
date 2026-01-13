@@ -4,7 +4,12 @@ from rest_framework.request import Request
 from core.base_service import BaseService, PaginationService
 from marketplace.decorators.validation import validate_marketplace
 from marketplace.models import Marketplace, MarketplaceTempate
-from marketplace.serializers import MarketplaceTemplateListSerializer, MarketplaceTemplateSerializer
+from marketplace.serializers import (
+    MarketplaceCreateSerializer,
+    MarketplaceSerializer,
+    MarketplaceTemplateListSerializer,
+    MarketplaceTemplateSerializer,
+)
 
 
 class MarketplaceService(BaseService):
@@ -14,6 +19,17 @@ class MarketplaceService(BaseService):
         self.marketplace = None
         if self.marketplace:
             self.marketplace = Marketplace.objects.filter(id=self.seller_id).last()
+
+    def create(self, request: Request):
+        serializer = MarketplaceCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self.get_412_response(serializer.errors)
+        try:
+            marketplace = serializer.save()
+            return self.get_201_response(data=MarketplaceSerializer(marketplace).data)
+        except Exception as e:
+            logger.error(f"Failed to create marketplace | Error: {e}")
+            return self.get_500_response(errors="Failed to create marketplace. Please try again later")
 
     @validate_marketplace
     def list(self, request: Request):

@@ -9,7 +9,12 @@ from seller.constants import CSV, SAMPLE_ROWS_COUNT
 from seller.decorators.validation import validate_seller
 from seller.file_parser import FileParser
 from seller.models import Seller, SellerFiles
-from seller.serializers import FileUploadSerialzier, SellerFilesSerializer
+from seller.serializers import (
+    FileUploadSerialzier,
+    SellerCreateSerializer,
+    SellerFilesSerializer,
+    SellerSerializer,
+)
 
 log = logger.bind(component="seller_base")
 
@@ -51,6 +56,17 @@ class SellerBaseService(BaseService):
         self.seller = None
         if self.seller_id:
             self.seller = Seller.objects.filter(id=self.seller_id).last()
+
+    def create(self, request: Request):
+        serializer = SellerCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self.get_412_response(errors=serializer.errors)
+        try:
+            seller = serializer.save()
+        except Exception as e:
+            logger.error(f"Failed to create seller | Error: {e}")
+            return self.get_500_response(errors="Failed to create seller. Please try again later")
+        return self.get_201_response(data=SellerSerializer(seller).data)
 
     @validate_seller
     def list(self, request: Request):
