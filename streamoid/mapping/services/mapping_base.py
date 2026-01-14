@@ -44,6 +44,7 @@ class MappingService(BaseService):
             return self.get_412_response(serializer.errors)
         try:
             mapping = serializer.save()
+            return PaginationService().paginated_response(mapping, MappingsListSerializer)
         except Exception as e:
             logger.error(f"Failed to save mapping | Error: {e}")
-        return PaginationService().paginated_response(mapping, MappingsListSerializer)
+            return self.get_500_response(errors="Failed to create mapping. Please try again later")

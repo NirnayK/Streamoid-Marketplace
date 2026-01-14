@@ -33,7 +33,7 @@ class MappingCreateSerializer(serializers.ModelSerializer):
         fields = ("marketplace_template_id", "seller_file_id", "mappings")
 
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._marketplace_template = None
         self._seller_file = None
 
@@ -54,7 +54,7 @@ class MappingCreateSerializer(serializers.ModelSerializer):
         return marketplace_template_id
 
     def validate_seller_file_id(self, seller_file_id):
-        seller_file = SellerFiles.objects.filter(id=seller_file_id).last()
+        seller_file = SellerFiles.objects.filter(id=seller_file_id).select_related("seller").last()
         if not seller_file:
             raise serializers.ValidationError("Invaid seller file Id")
         self._seller_file = seller_file
