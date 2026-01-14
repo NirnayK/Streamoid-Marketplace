@@ -16,7 +16,7 @@ help: ## Show available Makefile targets with descriptions
 
 
 build: ## Build the Docker image.
-	docker build --platform $(PLATFORM) --build-arg TARGETPLATFORM=$(PLATFORM) -f $(DOCKERFILE) -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	docker build --platform $(PLATFORM) -f $(DOCKERFILE) -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 
 run: ## Run the Django development server.
