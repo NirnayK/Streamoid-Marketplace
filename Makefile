@@ -1,9 +1,11 @@
 IMAGE_NAME ?= streamoid-marketplace
+IMAGE_TAG  ?= latest
 DOCKERFILE ?= docker/Dockerfile
+COMPOSE_FILE ?= docker/docker-compose.yml
 PYTHONPATH ?= streamoid
 export PYTHONPATH
 
-.PHONY: build run test local-run migrations migrate help
+.PHONY: build run test local-run migrations migrate help compose-up compose-down compose-ps compose-logs
 
 help: ## Show available Makefile targets with descriptions
 	@echo "Available targets:"
@@ -13,7 +15,7 @@ help: ## Show available Makefile targets with descriptions
 
 
 build: ## Build the Docker image.
-	docker build -f $(DOCKERFILE) -t $(IMAGE_NAME) .
+	docker build -f $(DOCKERFILE) -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 
 run: ## Run the Django development server.
@@ -30,3 +32,24 @@ migrations: ## Generate the new database migrations.
 
 migrate: ## Apply database migrations.
 	python streamoid/manage.py migrate
+
+
+compose-up: ## Start services using docker compose.
+	docker compose -f $(COMPOSE_FILE) up -d
+
+
+compose-down: ## Stop services using docker compose.
+	docker compose -f $(COMPOSE_FILE) down
+
+
+compose-ps: ## List running services using docker compose.
+	docker compose -f $(COMPOSE_FILE) ps
+
+
+compose-logs: ## View service logs using docker compose.
+	docker compose -f $(COMPOSE_FILE) logs -f
+
+
+zip: ## Generate a data.zip containing all relevant code.
+	rm -f data.zip
+	zip -r data.zip . -x "*.git*" "**/__pycache__/*" ".venv/*" ".pytest_cache/*" "streamoid/db.sqlite3" "streamoid/logs/*" "data.zip"
