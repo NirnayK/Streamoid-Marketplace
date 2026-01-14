@@ -36,6 +36,7 @@ MAPPING_ID_PARAMETER = OpenApiParameter(
 
 class MappingsView(APIView):
     @extend_schema(
+        operation_id="v1_mapping_list",
         parameters=[MARKETPLACE_ID_PARAMETER, SELLER_ID_PARAMETER, PAGE_NUMBER_PARAMETER, PAGE_SIZE_PARAMETER],
         responses={
             200: MappingsListResponseSerializer,
@@ -65,6 +66,7 @@ class MappingsView(APIView):
 
 class MappingsDetailView(APIView):
     @extend_schema(
+        operation_id="v1_mapping_retrieve",
         parameters=[MAPPING_ID_PARAMETER],
         responses={
             200: MappingsListResponseSerializer,

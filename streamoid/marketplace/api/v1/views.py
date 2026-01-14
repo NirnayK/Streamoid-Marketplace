@@ -35,6 +35,7 @@ MARKETPLACE_TEMPLATE_ID_PARAMETER = OpenApiParameter(
 
 class MarketplaceTemplateView(APIView):
     @extend_schema(
+        operation_id="v1_marketplace_templates_list",
         parameters=[MARKETPLACE_ID_PARAMETER, PAGE_NUMBER_PARAMETER, PAGE_SIZE_PARAMETER],
         responses={
             200: MarketplaceTemplateListResponseSerializer,
@@ -88,6 +89,7 @@ class MarketplaceView(APIView):
 
 class MarketplaceTemplateDetailView(APIView):
     @extend_schema(
+        operation_id="v1_marketplace_templates_retrieve",
         parameters=[MARKETPLACE_ID_PARAMETER, MARKETPLACE_TEMPLATE_ID_PARAMETER],
         responses={
             200: MarketplaceTemplateListResponseSerializer,

@@ -83,6 +83,9 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Streamoid Marketplace API",
     "DESCRIPTION": "API documentation for Streamoid Marketplace services.",
     "VERSION": "1.0.0",
+    "SWAGGER_UI_SETTINGS": {
+        "requestSnippetsEnabled": True,
+    },
 }
 
 

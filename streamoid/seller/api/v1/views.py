@@ -42,6 +42,7 @@ class SellerFilesView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     @extend_schema(
+        operation_id="v1_seller_files_list",
         parameters=[SELLER_ID_PARAMETER, PAGE_NUMBER_PARAMETER, PAGE_SIZE_PARAMETER],
         responses={
             200: SellerFilesListResponseSerializer,
@@ -95,6 +96,7 @@ class SellerView(APIView):
 
 class SellerFilesDetailView(APIView):
     @extend_schema(
+        operation_id="v1_seller_files_retrieve",
         parameters=[SELLER_ID_PARAMETER, FILE_ID_PARAMETER],
         responses={
             200: SellerFilesListResponseSerializer,
