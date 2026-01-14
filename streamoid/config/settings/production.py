@@ -20,3 +20,15 @@ ALLOWED_HOSTS = base.env_list("DJANGO_ALLOWED_HOSTS", default=[])
 LOG_DIR = Path(os.getenv("LOG_DIR", "/var/log/streamoid"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 base.init_logging(LOG_DIR, LOG_LEVEL)
+
+# Database configuration for production (MySQL)
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "HOST": os.getenv("MYSQL_HOST", "mysql"),
+        "PORT": os.getenv("MYSQL_PORT", "3306"),
+        "NAME": os.getenv("MYSQL_DATABASE", "streamoid"),
+        "USER": os.getenv("MYSQL_USER", "streamoid"),
+        "PASSWORD": os.getenv("MYSQL_PASSWORD", "streamoid"),
+    }
+}
