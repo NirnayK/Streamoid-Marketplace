@@ -6,14 +6,20 @@ Backend service for onboarding seller files, defining marketplace schemas, and m
 
 ### Components
 - **API**: Django REST Framework with schema via drf-spectacular.
-- **Storage**: SQLite by default; Docker Compose includes MySQL (not wired in by default).
+- **Storage**:
+  - **Local**: SQLite by default (`db.sqlite3`).
+  - **Production/Docker**: MySQL (configured in `production.py`).
 - **Object store**: MinIO for seller file uploads.
-- **Cron**: A lightweight cron server handles background tasks for the MVP.
+- **Background Tasks**: A lightweight cron server (`django-crontab`) handles background tasks for the MVP.
 - **Apps**:
   - `seller`: Sellers and their uploaded files (CSV/XLSX).
   - `marketplace`: Marketplace definitions and template schemas.
-  - `mapping`: Links seller file headers to marketplace template keys.
+  - `mapping`: Links seller file headers to marketplace template keys (Transformation engine).
 
+### Environment Configuration
+The project uses `DJANGO_ENV` to switch between `local` and `production` settings.
+- **Local**: Loads `.env.local`. Default DB is SQLite.
+- **Production**: Loads `.env` and Docker secrets. Default DB is MySQL.
 
 ### Data model (DB schema)
 All models include `created_at` and `updated_at` timestamps via `BaseModel`.
@@ -25,9 +31,9 @@ All models include `created_at` and `updated_at` timestamps via `BaseModel`.
 - **Marketplace**
   - `id`, `name`
 - **MarketplaceTemplate**
-  - `id`, `marketplace_id`, `template`
+  - `id`, `marketplace_id`, `template` (JSON validation schema)
 - **Mappings**
-  - `id`, `marketplace_template_id`, `seller_file_id`, `mappings`
+  - `id`, `marketplace_template_id`, `seller_file_id`, `mappings` (Header-to-key map)
 
 ### Marketplace template format
 Templates are JSON objects where each key defines a validation rule for a marketplace field.
@@ -54,12 +60,15 @@ Notes:
 Base URL: `/api/v1`
 
 OpenAPI:
-- `/api/schema/` (schema)
-- `/api/docs/` (Swagger UI)
+- `/api/schema/` (OpenAPI Spec)
+- `/api/docs/` (Swagger UI - **Includes Request Snippets/cURL**)
 
 ### Authentication
 
-The API uses Bearer token authentication. 
+The API is configured to support Bearer token authentication. 
+
+> [!NOTE]
+> In this MVP, authentication is handled at the service level. The instructions below describe how to generate a token that follows the standard Bearer pattern.
 
 To create a bearer token:
 1. Create a Django user:
@@ -99,43 +108,50 @@ Pagination:
 ## Setup and usage
 
 ### Local setup
-1) Create .venv and install dependencies.
-```
-uv sync
-```
+1. **Initialize Environment**:
+   ```bash
+   uv sync
+   ```
+2. **Database Migrations**:
+   ```bash
+   make migrate
+   ```
+3. **Run Development Server**:
+   ```bash
+   make run
+   ```
+   Access at `http://localhost:8000`.
 
-
-3) Configure environment.
-- Use `.env.local` for local development (loaded automatically).
-- Ensure MinIO settings point to a running MinIO instance if you upload files.
-
-4) Run migrations and start the server.
-```
-python streamoid/manage.py migrate
-python streamoid/manage.py runserver 0.0.0.0:8000
-```
-
-Cron note:
-- Ideally, a dedicated task server should be used. Something like a celery + rabbitmq/redis
-- For simple MVP testing, a cron server is used instead to avoid extra moving parts.
+### Makefile Targets
+A `Makefile` is provided for common tasks:
+| Target | Description |
+| :--- | :--- |
+| `make run` | Run the Django development server locally |
+| `make test` | Run unit tests with `pytest` |
+| `make migrations` | Generate new database migrations |
+| `make migrate` | Apply database migrations |
+| `make build` | Build the Docker image |
+| `make compose-up` | Start services via Docker Compose |
+| `make compose-down` | Stop services via Docker Compose |
+| `make compose-destroy`| Stop services and **delete all data** (DB/MinIO) |
+| `make zip` | Package code into `data.zip` for submission |
 
 ### Docker (Compose)
 From the repo root:
-```
-docker compose -f docker/docker-compose.yml up --build
+```bash
+make compose-up
 ```
 
 Notes:
-- The container uses `config.settings.production` and loads `.env` via Docker secrets.
-- MinIO console: `http://localhost:9001` (default credentials `minioadmin` / `minioadmin`).
-- MySQL container is included but Django defaults to SQLite unless you override `DATABASES`.
+- The container uses `config.settings.production`.
+- MinIO console: `http://localhost:9001` (Credentials: `minioadmin` / `minioadmin`).
+- Database: MySQL is used within Docker. Persistent data is stored in Docker volumes.
 
-### Run unit tests
-```
-pytest
-```
+### Development Utilities
+- **Run Tests**: `make test`
+- **Linting**: Ruff is used (configured in `pyproject.toml`).
+- **Submit Code**: `make zip` generates a `data.zip` excluding unnecessary files.
 
-Or using Make:
-```
-make test
-```
+---
+
+*Note on Cron*: For the MVP, background tasks are handled via `django-crontab`. Ensure the cron thread is running or use `make run` which includes the scheduler if configured.
