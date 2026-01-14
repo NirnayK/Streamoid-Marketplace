@@ -209,3 +209,6 @@ __marimo__/
 
 # Zip files
 *.zip
+
+# macOS
+.DS_Store

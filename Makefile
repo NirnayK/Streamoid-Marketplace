@@ -2,6 +2,7 @@ IMAGE_NAME ?= streamoid-marketplace
 IMAGE_TAG  ?= latest
 DOCKERFILE ?= docker/Dockerfile
 COMPOSE_FILE ?= docker/docker-compose.yml
+PLATFORM ?= linux/amd64
 PYTHONPATH ?= streamoid
 export PYTHONPATH
 
@@ -15,7 +16,7 @@ help: ## Show available Makefile targets with descriptions
 
 
 build: ## Build the Docker image.
-	docker build -f $(DOCKERFILE) -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	docker build --platform $(PLATFORM) --build-arg TARGETPLATFORM=$(PLATFORM) -f $(DOCKERFILE) -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 
 run: ## Run the Django development server.

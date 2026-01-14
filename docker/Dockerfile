@@ -1,4 +1,5 @@
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=$TARGETPLATFORM ghcr.io/astral-sh/uv:python3.12-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
