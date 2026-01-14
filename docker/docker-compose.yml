@@ -23,6 +23,27 @@ services:
     secrets:
       - app_env
 
+  cron:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: streamoid-cron
+    depends_on:
+      - mysql
+      - minio
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      LOG_DIR: /var/log/streamoid
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_SECURE: "false"
+    volumes:
+      - logs:/var/log/streamoid
+    secrets:
+      - app_env
+    command: ["sh", "-c", "python streamoid/manage.py crontab add && cron -f"]
+
   mysql:
     image: mysql:8.4
     container_name: streamoid-mysql

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "seller",
     "marketplace",
     "mapping",
+    "django_crontab",
 ]
 
 MIDDLEWARE = [

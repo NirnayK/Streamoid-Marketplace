@@ -10,6 +10,7 @@ RUN apt-get update \
         build-essential \
         default-libmysqlclient-dev \
         pkg-config \
+        cron \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml uv.lock README.md /app/
