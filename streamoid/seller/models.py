@@ -1,5 +1,4 @@
 import uuid
-from pathlib import Path
 
 from django.db import models
 
@@ -16,18 +15,22 @@ class ContentType(models.TextChoices):
 
 class Seller(BaseModel):
     name = models.CharField(max_length=MAX_NAME_LENGTH)
-    bucket_name = models.UUIDField(default=uuid.uuid4)
+    seller_uuid = models.UUIDField(default=uuid.uuid4)
     # Future relevant fields related to the seller
 
     def __str__(self):
         return f"<Seller: {self.id} | Name: {self.name} | Bucket Name: {self.bucket_name}"
+
+    @property
+    def bucket_name(self):
+        return str(self.seller_uuid)
 
 
 class SellerFiles(BaseModel):
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE, null=True, blank=True)
 
     name = models.CharField(max_length=MAX_NAME_LENGTH)
-    type = models.CharField(max_length=MAX_NAME_LENGTH, choices=ContentType.choices)
+    file_type = models.CharField(max_length=MAX_NAME_LENGTH, choices=ContentType.choices)
     path = models.CharField(max_length=MAX_FILE_PATH_LENGTH)
 
     rows_count = models.IntegerField(default=0)
@@ -39,6 +42,6 @@ class SellerFiles(BaseModel):
 
     @property
     def file(self):
-        bucket_name = Path(self.path).parent.name
+        bucket_name = self.seller.bucket_name
         file_name = self.name
         return MinioHandler().get_file(bucket_name, file_name)

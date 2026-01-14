@@ -50,7 +50,8 @@ def test_run_processes_pending_mappings():
 
 
 def test_process_mapping_success_updates_status_and_path():
-    seller_file = SimpleNamespace(name="items.csv", path="bucket/items.csv", type=CSV)
+    seller = SimpleNamespace(bucket_name="bucket")
+    seller_file = SimpleNamespace(name="items.csv", path="bucket/items.csv", file_type=CSV, seller=seller)
     marketplace_template = SimpleNamespace(template={"sku": {"type": "string"}})
     mapping = FakeMapping(seller_file, marketplace_template, mappings=[{"seller": "sku", "marketplace": "sku"}])
     output_file = BytesIO(b"data")
@@ -76,7 +77,8 @@ def test_process_mapping_success_updates_status_and_path():
 
 
 def test_process_mapping_sets_failed_when_storage_fails():
-    seller_file = SimpleNamespace(name="items.csv", path="bucket/items.csv", type=CSV)
+    seller = SimpleNamespace(bucket_name="bucket")
+    seller_file = SimpleNamespace(name="items.csv", path="bucket/items.csv", file_type=CSV, seller=seller)
     marketplace_template = SimpleNamespace(template={"sku": {"type": "string"}})
     mapping = FakeMapping(seller_file, marketplace_template, mappings=[{"seller": "sku", "marketplace": "sku"}])
     output_file = BytesIO(b"data")

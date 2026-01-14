@@ -29,7 +29,14 @@ class SellerFilesSerializer(DetailsBaseSerializer):
 
     class Meta:
         model = SellerFiles
-        fields = DetailsBaseSerializer.Meta.fields + ("name", "seller", "headers", "rows_count", "sample_rows")
+        fields = DetailsBaseSerializer.Meta.fields + (
+            "name",
+            "seller",
+            "file_type",
+            "headers",
+            "rows_count",
+            "sample_rows",
+        )
 
 
 class FileUploadSerialzier(Serializer):

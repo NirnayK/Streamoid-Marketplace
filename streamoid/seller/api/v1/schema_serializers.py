@@ -19,3 +19,7 @@ class SellerFilesListResponseSerializer(BaseListResponseSerializer):
 
 class SellerFileResponseSerializer(BaseDetailResponseSerializer):
     data = SellerFilesSerializer()
+
+
+class SellerListResponseSerializer(BaseListResponseSerializer):
+    data = SellerSerializer(many=True)

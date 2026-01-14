@@ -45,12 +45,12 @@ class FileTransformerCron:
                 raise ValueError("Failed to read seller file from storage.")
 
             template_keys = list((marketplace_template.template or {}).keys())
-            headers, rows = cls._parse_rows(file_bytes, seller_file.type)
+            headers, rows = cls._parse_rows(file_bytes, seller_file.file_type)
             # Stream validation/output to keep memory bounded for large files.
             validated_rows = validate_file_iter(marketplace_template, mapping.mappings, headers, rows)
-            output_file = cls._build_transformed_file(template_keys, validated_rows, seller_file.type)
+            output_file = cls._build_transformed_file(template_keys, validated_rows, seller_file.file_type)
 
-            bucket_name = Path(seller_file.path).parent.name
+            bucket_name = seller_file.seller.bucket_name
             object_name = str(Path(TRANSFORMED_FOLDER).joinpath(seller_file.name))
             transformed_path = str(Path(bucket_name).joinpath(object_name))
 

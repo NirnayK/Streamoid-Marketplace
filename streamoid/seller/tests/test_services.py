@@ -8,10 +8,10 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from seller.constants import CSV
+from seller.constants import CSV, XLSX
 from seller.models import Seller, SellerFiles
 from seller.serializers import SellerFilesSerializer
-from seller.services.seller_base import SellerBaseService, SellerHelperService
+from seller.services.seller_base import SellerFilesService, SellerHelperService
 
 pytestmark = pytest.mark.django_db
 
@@ -70,9 +70,7 @@ def test_store_file_returns_none_when_minio_store_fails(_store_file, seller, upl
 @patch("seller.services.seller_base.MinioHandler.remove_file", return_value=True)
 @patch("seller.services.seller_base.SellerFiles.objects.create", side_effect=Exception("boom"))
 @patch("seller.services.seller_base.MinioHandler.store_file", return_value=True)
-def test_store_file_cleans_up_on_db_failure(
-    _store_file, _seller_create, remove_file, seller, upload_csv
-):
+def test_store_file_cleans_up_on_db_failure(_store_file, _seller_create, remove_file, seller, upload_csv):
     service = SellerHelperService(seller)
     result = service.store_file("bucket", upload_csv, CSV)
 
@@ -88,14 +86,14 @@ def test_store_file_creates_seller_file(_store_file, seller, upload_csv):
     assert result is not None
     assert result.seller == seller
     assert result.name == "items.csv"
-    assert result.type == CSV
+    assert result.file_type == CSV
     assert result.path == "bucket/items.csv"
     assert SellerFiles.objects.count() == 1
 
 
 def test_list_requires_seller_id(api_rf):
     request = build_request(api_rf)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     response = service.list(request)
 
@@ -105,7 +103,7 @@ def test_list_requires_seller_id(api_rf):
 
 def test_list_returns_404_for_missing_seller(api_rf):
     request = build_request(api_rf, seller_id=999)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     response = service.list(request)
 
@@ -115,9 +113,9 @@ def test_list_returns_404_for_missing_seller(api_rf):
 
 @patch("seller.services.seller_base.PaginationService.paginated_response", return_value={"ok": True})
 def test_list_returns_paginated_response(paginated_response, api_rf, seller):
-    SellerFiles.objects.create(seller=seller, name="items.csv", type=CSV, path="bucket/items.csv")
+    SellerFiles.objects.create(seller=seller, name="items.csv", file_type=CSV, path="bucket/items.csv")
     request = build_request(api_rf, seller_id=seller.id)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     response = service.list(request)
 
@@ -129,7 +127,7 @@ def test_list_returns_paginated_response(paginated_response, api_rf, seller):
 
 def test_get_returns_404_when_file_missing(api_rf, seller):
     request = build_request(api_rf, seller_id=seller.id)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     response = service.get(file_id=999)
 
@@ -139,9 +137,11 @@ def test_get_returns_404_when_file_missing(api_rf, seller):
 
 @patch("seller.services.seller_base.PaginationService.paginated_response", return_value={"ok": True})
 def test_get_returns_paginated_response(paginated_response, api_rf, seller):
-    seller_file = SellerFiles.objects.create(seller=seller, name="items.csv", type=CSV, path="bucket/items.csv")
+    seller_file = SellerFiles.objects.create(
+        seller=seller, name="items.csv", file_type=CSV, path="bucket/items.csv"
+    )
     request = build_request(api_rf, seller_id=seller.id)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     response = service.get(file_id=seller_file.id)
 
@@ -154,7 +154,7 @@ def test_get_returns_paginated_response(paginated_response, api_rf, seller):
 def test_upload_rejects_invalid_file(api_rf, seller):
     upload = SimpleUploadedFile("items.txt", b"nope", content_type="text/plain")
     request = build_request(api_rf, method="post", seller_id=seller.id, upload=upload)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     response = service.upload(request)
 
@@ -165,7 +165,7 @@ def test_upload_rejects_invalid_file(api_rf, seller):
 @patch("seller.services.seller_base.SellerHelperService.store_file", return_value=None)
 def test_upload_returns_500_when_storage_fails(_store_file, api_rf, seller, upload_csv):
     request = build_request(api_rf, method="post", seller_id=seller.id, upload=upload_csv)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     response = service.upload(request)
 
@@ -173,12 +173,14 @@ def test_upload_returns_500_when_storage_fails(_store_file, api_rf, seller, uplo
     assert response["errors"] == "Failed to store file. Please try again later"
 
 
-@patch("seller.services.seller_base.PaginationService.set_response", return_value={"ok": True})
+@patch("seller.services.seller_base.PaginationService.paginated_response", return_value={"ok": True})
 @patch("seller.services.seller_base.FileParser.parse_csv", return_value=(["sku", "name"], [["1", "Widget"]], 1))
-def test_upload_updates_rows_count_and_sets_metadata(_parse_csv, set_response, api_rf, seller, upload_csv):
-    seller_file = SellerFiles.objects.create(seller=seller, name="items.csv", type=CSV, path="bucket/items.csv")
+def test_upload_updates_rows_count_and_sets_metadata(_parse_csv, paginated_response, api_rf, seller, upload_csv):
+    seller_file = SellerFiles.objects.create(
+        seller=seller, name="items.csv", file_type=CSV, path="bucket/items.csv"
+    )
     request = build_request(api_rf, method="post", seller_id=seller.id, upload=upload_csv)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     with patch("seller.services.seller_base.SellerHelperService.store_file", return_value=seller_file):
         response = service.upload(request)
@@ -188,25 +190,25 @@ def test_upload_updates_rows_count_and_sets_metadata(_parse_csv, set_response, a
     assert seller_file.headers == ["sku", "name"]
     assert seller_file.sample_rows == [["1", "Widget"]]
     assert response == {"ok": True}
-    args, _kwargs = set_response.call_args
+    args, _kwargs = paginated_response.call_args
     assert args[0] == seller_file
     assert args[1] is SellerFilesSerializer
 
 
-@patch("seller.services.seller_base.PaginationService.set_response", return_value={"ok": True})
+@patch("seller.services.seller_base.PaginationService.paginated_response", return_value={"ok": True})
 @patch("seller.services.seller_base.FileParser.parse_excel", return_value=(["sku", "name"], [["1", "Widget"]], 1))
-def test_upload_uses_excel_parser(_parse_excel, set_response, api_rf, seller, upload_xlsx):
+def test_upload_uses_excel_parser(_parse_excel, paginated_response, api_rf, seller, upload_xlsx):
     seller_file = SellerFiles.objects.create(
-        seller=seller, name="items.xlsx", type=".xlsx", path="bucket/items.xlsx"
+        seller=seller, name="items.xlsx", file_type=XLSX, path="bucket/items.xlsx"
     )
     request = build_request(api_rf, method="post", seller_id=seller.id, upload=upload_xlsx)
-    service = SellerBaseService(request)
+    service = SellerFilesService(request)
 
     with patch("seller.services.seller_base.SellerHelperService.store_file", return_value=seller_file):
         response = service.upload(request)
 
     assert response == {"ok": True}
     _parse_excel.assert_called_once()
-    args, _kwargs = set_response.call_args
+    args, _kwargs = paginated_response.call_args
     assert args[0] == seller_file
     assert args[1] is SellerFilesSerializer

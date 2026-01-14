@@ -13,13 +13,6 @@ from marketplace.serializers import (
 
 
 class MarketplaceService(BaseService):
-    def __init__(self, request: Request):
-        # Validate the marketplace
-        self.marketplace_id = request.query_params.get("marketplace_id")
-        self.marketplace = None
-        if self.marketplace:
-            self.marketplace = Marketplace.objects.filter(id=self.seller_id).last()
-
     def create(self, request: Request):
         serializer = MarketplaceCreateSerializer(data=request.data)
         if not serializer.is_valid():
@@ -30,6 +23,21 @@ class MarketplaceService(BaseService):
         except Exception as e:
             logger.error(f"Failed to create marketplace | Error: {e}")
             return self.get_500_response(errors="Failed to create marketplace. Please try again later")
+
+    def list(self, request: Request):
+        query_params = request.query_params.dict()
+        page_number, page_size = query_params.get("page_number"), query_params.get("page_size")
+        marketplaces = Marketplace.objects.all().order_by("-created_at")
+        return PaginationService(page_number, page_size).paginated_response(marketplaces, MarketplaceSerializer)
+
+
+class MarketplaceTemplateService(BaseService):
+    def __init__(self, request: Request):
+        # Validate the marketplace
+        self.marketplace_id = request.query_params.get("marketplace_id")
+        self.marketplace = None
+        if self.marketplace_id:
+            self.marketplace = Marketplace.objects.filter(id=self.marketplace_id).last()
 
     @validate_marketplace
     def list(self, request: Request):
@@ -54,7 +62,7 @@ class MarketplaceService(BaseService):
         return PaginationService().paginated_response(template, MarketplaceTemplateListSerializer)
 
     @validate_marketplace
-    def post(self, request: Request):
+    def create(self, request: Request):
         data = request.data
         data["marketplace_id"] = self.marketplace_id
         serializer = MarketplaceTemplateSerializer(data=data)

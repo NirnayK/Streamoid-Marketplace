@@ -18,6 +18,7 @@ class MinioHandler:
             settings.MINIO_ENDPOINT,
             access_key=settings.MINIO_ACCESS_KEY,
             secret_key=settings.MINIO_SECRET_KEY,
+            secure=settings.MINIO_SECURE,
         )
 
     def check_and_create_bucket(self, bucket_name):
@@ -35,7 +36,7 @@ class MinioHandler:
             return False
         log.info("Storing object in MinIO: bucket={}, object={}", bucket_name, file_name)
         try:
-            self.client.append_object(bucket_name=bucket_name, file_name=file_name, data=file)
+            self.client.put_object(bucket_name=bucket_name, object_name=file_name, data=file, length=file.size)
         except Exception as e:
             log.exception(f"Falied to upload file | Error: {e}")
             return False

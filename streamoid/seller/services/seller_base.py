@@ -30,11 +30,11 @@ class SellerHelperService:
         if not is_stored:
             return None
         try:
-            path = Path(str(bucket_name)).joinpath(file_name)
+            path = Path(bucket_name).joinpath(file_name)
             seller_file = SellerFiles.objects.create(
                 seller=self.seller,
                 name=file.name,
-                type=file_type,
+                file_type=file_type,
                 path=str(path),
             )
             return seller_file
@@ -49,14 +49,7 @@ class SellerHelperService:
             return None
 
 
-class SellerBaseService(BaseService):
-    def __init__(self, request: Request, *args, **kwargs):
-        # Validate the seller
-        self.seller_id = request.query_params.get("seller_id")
-        self.seller = None
-        if self.seller_id:
-            self.seller = Seller.objects.filter(id=self.seller_id).last()
-
+class SellerService(BaseService):
     def create(self, request: Request):
         serializer = SellerCreateSerializer(data=request.data)
         if not serializer.is_valid():
@@ -67,6 +60,21 @@ class SellerBaseService(BaseService):
             logger.error(f"Failed to create seller | Error: {e}")
             return self.get_500_response(errors="Failed to create seller. Please try again later")
         return self.get_201_response(data=SellerSerializer(seller).data)
+
+    def list(self, request: Request):
+        query_params = request.query_params.dict()
+        page_number, page_size = query_params.get("page_number"), query_params.get("page_size")
+        sellers = Seller.objects.all().order_by("-created_at")
+        return PaginationService(page_number, page_size).paginated_response(sellers, SellerSerializer)
+
+
+class SellerFilesService(BaseService):
+    def __init__(self, request: Request, *args, **kwargs):
+        # Validate the seller
+        self.seller_id = request.query_params.get("seller_id")
+        self.seller = None
+        if self.seller_id:
+            self.seller = Seller.objects.filter(id=self.seller_id).last()
 
     @validate_seller
     def list(self, request: Request):
@@ -108,4 +116,4 @@ class SellerBaseService(BaseService):
         seller_file.sample_rows = sample_rows
         seller_file.save(update_fields=["rows_count", "headers", "sample_rows", "updated_at"])
 
-        return PaginationService().set_response(seller_file, SellerFilesSerializer)
+        return PaginationService().paginated_response(seller_file, SellerFilesSerializer)

@@ -7,7 +7,7 @@ from rest_framework.test import APIRequestFactory
 
 from marketplace.models import Marketplace, MarketplaceTempate
 from marketplace.serializers import MarketplaceTemplateListSerializer
-from marketplace.services.marketplace_base import MarketplaceService
+from marketplace.services.marketplace_base import MarketplaceTemplateService
 
 pytestmark = pytest.mark.django_db
 
@@ -35,7 +35,7 @@ def build_request(api_rf, method="get", marketplace_id=None, data=None):
 
 def test_list_requires_marketplace_id(api_rf):
     request = build_request(api_rf)
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
 
     response = service.list(request)
 
@@ -45,7 +45,7 @@ def test_list_requires_marketplace_id(api_rf):
 
 def test_list_returns_404_for_missing_marketplace(api_rf):
     request = build_request(api_rf, marketplace_id=999)
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
 
     response = service.list(request)
 
@@ -57,7 +57,7 @@ def test_list_returns_404_for_missing_marketplace(api_rf):
 def test_list_returns_paginated_response(paginated_response, api_rf, marketplace):
     MarketplaceTempate.objects.create(marketplace=marketplace, template={"sku": "1"})
     request = build_request(api_rf, marketplace_id=marketplace.id)
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
     service.marketplace = marketplace
 
     response = service.list(request)
@@ -70,7 +70,7 @@ def test_list_returns_paginated_response(paginated_response, api_rf, marketplace
 
 def test_get_returns_404_when_template_missing(api_rf, marketplace):
     request = build_request(api_rf, marketplace_id=marketplace.id)
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
     service.marketplace = marketplace
 
     response = service.get(marketplace_template_id=999)
@@ -83,7 +83,7 @@ def test_get_returns_404_when_template_missing(api_rf, marketplace):
 def test_get_returns_paginated_response(paginated_response, api_rf, marketplace):
     template = MarketplaceTempate.objects.create(marketplace=marketplace, template={"sku": "1"})
     request = build_request(api_rf, marketplace_id=marketplace.id)
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
     service.marketplace = marketplace
 
     response = service.get(marketplace_template_id=template.id)
@@ -96,14 +96,14 @@ def test_get_returns_paginated_response(paginated_response, api_rf, marketplace)
 
 def test_post_returns_412_when_serializer_invalid(api_rf, marketplace):
     request = build_request(api_rf, method="post", marketplace_id=marketplace.id, data={"template": {}})
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
     service.marketplace = marketplace
 
     with patch("marketplace.services.marketplace_base.MarketplaceTemplateSerializer") as serializer_cls:
         serializer = serializer_cls.return_value
         serializer.is_valid.return_value = False
         serializer.errors = {"template": ["This field is required."]}
-        response = service.post(request)
+        response = service.create(request)
 
     assert response["code"] == 412
     assert response["errors"] == {"template": ["This field is required."]}
@@ -111,14 +111,14 @@ def test_post_returns_412_when_serializer_invalid(api_rf, marketplace):
 
 def test_post_returns_500_on_save_error(api_rf, marketplace):
     request = build_request(api_rf, method="post", marketplace_id=marketplace.id, data={"template": {"a": 1}})
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
     service.marketplace = marketplace
 
     with patch("marketplace.services.marketplace_base.MarketplaceTemplateSerializer") as serializer_cls:
         serializer = serializer_cls.return_value
         serializer.is_valid.return_value = True
         serializer.save.side_effect = Exception("boom")
-        response = service.post(request)
+        response = service.create(request)
 
     assert response["code"] == 500
     assert response["errors"] == "Faled to save the template. Please try again later"
@@ -126,7 +126,7 @@ def test_post_returns_500_on_save_error(api_rf, marketplace):
 
 def test_post_returns_paginated_response(api_rf, marketplace):
     request = build_request(api_rf, method="post", marketplace_id=marketplace.id, data={"template": {"a": 1}})
-    service = MarketplaceService(request)
+    service = MarketplaceTemplateService(request)
     service.marketplace = marketplace
     template = MarketplaceTempate.objects.create(marketplace=marketplace, template={"sku": "1"})
 
@@ -137,7 +137,7 @@ def test_post_returns_paginated_response(api_rf, marketplace):
         with patch(
             "marketplace.services.marketplace_base.PaginationService.paginated_response", return_value={"ok": True}
         ) as paginated_response:
-            response = service.post(request)
+            response = service.create(request)
 
     assert response == {"ok": True}
     paginated_response.assert_called_once()

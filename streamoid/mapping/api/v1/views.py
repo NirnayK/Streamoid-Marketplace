@@ -1,6 +1,6 @@
 from copy import copy
 
-from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -9,29 +9,9 @@ from rest_framework.views import APIView
 from core.constants import HEAD_DATA
 from core.schema import PAGE_NUMBER_PARAMETER, PAGE_SIZE_PARAMETER
 from core.serializers import ErrorResponseSerializer
-from mapping.schema_serializers import MappingsListResponseSerializer
-from mapping.serializers import MappingCreateSerializer
+from mapping.api.v1.paramters import MAPPING_ID_PARAMETER, MARKETPLACE_ID_PARAMETER, SELLER_ID_PARAMETER
+from mapping.api.v1.schema_serializers import MappingCreateRequestSerializer, MappingsListResponseSerializer
 from mapping.services.mapping_base import MappingService
-
-MARKETPLACE_ID_PARAMETER = OpenApiParameter(
-    name="marketplace_id",
-    type=OpenApiTypes.INT,
-    location=OpenApiParameter.QUERY,
-    description="Filter mappings by marketplace ID.",
-)
-SELLER_ID_PARAMETER = OpenApiParameter(
-    name="seller_id",
-    type=OpenApiTypes.INT,
-    location=OpenApiParameter.QUERY,
-    description="Filter mappings by seller ID.",
-)
-MAPPING_ID_PARAMETER = OpenApiParameter(
-    name="mapping_id",
-    type=OpenApiTypes.INT,
-    location=OpenApiParameter.PATH,
-    required=True,
-    description="ID of the mapping.",
-)
 
 
 class MappingsView(APIView):
@@ -48,14 +28,14 @@ class MappingsView(APIView):
         return Response(response, status=response.get("code"), headers=HEAD_DATA)
 
     @extend_schema(
-        request=MappingCreateSerializer,
+        request=MappingCreateRequestSerializer,
         responses={
             200: MappingsListResponseSerializer,
             412: ErrorResponseSerializer,
         },
     )
     def post(self, request: Request):
-        response = MappingService(request).post(request)
+        response = MappingService(request).create(request)
         return Response(response, status=response.get("code"), headers=HEAD_DATA)
 
     def options(self, request: Request, *args, **kwargs):

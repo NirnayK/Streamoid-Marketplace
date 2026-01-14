@@ -5,7 +5,7 @@ COMPOSE_FILE ?= docker/docker-compose.yml
 PYTHONPATH ?= streamoid
 export PYTHONPATH
 
-.PHONY: build run test local-run migrations migrate help compose-up compose-down compose-ps compose-logs
+.PHONY: build run test local-run migrations migrate help compose-up compose-down compose-destroy compose-ps compose-logs
 
 help: ## Show available Makefile targets with descriptions
 	@echo "Available targets:"
@@ -40,6 +40,10 @@ compose-up: ## Start services using docker compose.
 
 compose-down: ## Stop services using docker compose.
 	docker compose -f $(COMPOSE_FILE) down
+
+
+compose-destroy: ## Stop services and remove volumes (deletes database and minio data).
+	docker compose -f $(COMPOSE_FILE) down -v
 
 
 compose-ps: ## List running services using docker compose.

@@ -12,7 +12,7 @@ class SellerAdmin(admin.ModelAdmin):
 
 @admin.register(SellerFiles)
 class SellerFilesAdmin(admin.ModelAdmin):
-    list_display = ("id", "seller", "name", "type", "rows_count", "created_at")
-    list_filter = ("type", "created_at")
+    list_display = ("id", "seller", "name", "file_type", "rows_count", "created_at")
+    list_filter = ("file_type",)
     search_fields = ("name", "path")
     readonly_fields = ("created_at", "updated_at")

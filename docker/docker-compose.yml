@@ -7,7 +7,7 @@ services:
     container_name: streamoid-web
     depends_on:
       mysql:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_started
       migrate:
@@ -36,7 +36,7 @@ services:
     container_name: streamoid-cron
     depends_on:
       mysql:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_started
       migrate:
@@ -61,7 +61,8 @@ services:
       dockerfile: docker/Dockerfile
     container_name: streamoid-migrate
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
       LOG_DIR: /var/log/streamoid
@@ -85,6 +86,12 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z

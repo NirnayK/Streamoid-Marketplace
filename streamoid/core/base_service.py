@@ -81,10 +81,31 @@ class PaginationService(BaseService):
     def _get_total_count(self, data):
         if data is None:
             return 0
+        if isinstance(data, (list, tuple, set)):
+            return len(data)
         count_method = getattr(data, "count", None)
         if callable(count_method):
-            return count_method()
-        return len(data)
+            try:
+                return count_method()
+            except TypeError:
+                pass
+        try:
+            return len(data)
+        except TypeError:
+            return len(self._coerce_to_list(data))
+
+    @staticmethod
+    def _coerce_to_list(data):
+        if data is None:
+            return []
+        if isinstance(data, (list, tuple, set)):
+            return list(data)
+        if isinstance(data, (str, bytes, dict)):
+            return [data]
+        try:
+            return list(data)
+        except TypeError:
+            return [data]
 
     def _validate_pagination(self):
         if self.page_number is None and self.page_size is None:
@@ -103,8 +124,7 @@ class PaginationService(BaseService):
         return serializer.validated_data["page_number"], serializer.validated_data["page_size"], None
 
     def _paginate(self, data, page_number, page_size):
-        if data is None:
-            data = []
+        data = self._coerce_to_list(data)
         paginator_object = Paginator(data, page_size)
         try:
             datalist = paginator_object.page(page_number).object_list
@@ -117,12 +137,12 @@ class PaginationService(BaseService):
         return datalist
 
     def _set_unpaginated_response(self, data, serializer_class=None, serializer_context=None):
-        datalist = data if data is not None else []
+        datalist = self._coerce_to_list(data)
         if serializer_class:
             serializer_context = serializer_context or {}
             datalist = serializer_class(datalist, many=True, context=serializer_context).data
         self.set_response(data=datalist)
-        total_count = self._get_total_count(data)
+        total_count = self._get_total_count(datalist)
         self.set_total_page_number(0 if total_count == 0 else 1, total_count)
 
     def paginated_response(self, data=None, serializer_class=None, serializer_context=None):

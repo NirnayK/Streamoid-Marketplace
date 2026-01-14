@@ -57,6 +57,19 @@ OpenAPI:
 - `/api/schema/` (schema)
 - `/api/docs/` (Swagger UI)
 
+### Authentication
+
+The API uses Bearer token authentication. 
+
+To create a bearer token:
+1. Create a Django user:
+   ```bash
+   python streamoid/manage.py createsuperuser
+   ```
+2. Encode the `username:password` string in Base64.
+3. Use the result in the `Authorization` header:
+   `Authorization: Bearer <base64_encoded_string>`
+
 ### Response envelope
 Single item:
 ```
